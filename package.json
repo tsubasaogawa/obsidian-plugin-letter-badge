@@ -1,0 +1,18 @@
+{
+  "name": "obsidian-plugin-letter-badge",
+  "version": "0.1.0",
+  "description": "Obsidian plugin that shows a letter badge on the Windows taskbar button.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production"
+  },
+  "keywords": [],
+  "author": "Tsubasa Ogawa",
+  "license": "MIT",
+  "devDependencies": {
+    "esbuild": "^0.25.5",
+    "obsidian": "latest",
+    "typescript": "^5.8.3"
+  }
+}

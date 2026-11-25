@@ -1,0 +1,10 @@
+{
+  "id": "letter-badge",
+  "name": "Letter Badge",
+  "version": "0.1.0",
+  "minAppVersion": "1.0.0",
+  "description": "Shows a letter badge on the Windows taskbar button to tell vaults apart.",
+  "author": "Tsubasa Ogawa",
+  "authorUrl": "https://github.com/tsubasaogawa",
+  "isDesktopOnly": true
+}

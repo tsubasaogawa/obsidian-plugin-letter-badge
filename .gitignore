@@ -1,0 +1,6 @@
+# Obsidian plugin build artifacts
+main.js
+main.js.map
+
+# Node modules
+node_modules
