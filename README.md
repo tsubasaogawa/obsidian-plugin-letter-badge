@@ -2,7 +2,7 @@
 
 An Obsidian plugin that shows a one-letter badge on the Windows taskbar button, so you can tell vaults apart at a glance.
 
-The badge is drawn by the plugin, so you don't need to prepare an icon file.
+The plugin draws the badge itself, so you don't need an icon file.
 
 ## Features
 
