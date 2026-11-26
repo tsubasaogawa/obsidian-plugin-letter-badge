@@ -1,5 +1,7 @@
 # Letter Badge
 
+<img width="147" height="51" alt="image" src="https://github.com/user-attachments/assets/bd80b0a4-7ba8-4edd-ba25-35464c07ccf8" />
+
 An Obsidian plugin that shows a one-letter badge on the Windows taskbar button, so you can tell vaults apart at a glance.
 
 The plugin draws the badge itself, so you don't need an icon file.
