@@ -38,6 +38,11 @@ const DEFAULT_SETTINGS: LetterBadgeSettings = {
 	size: "large",
 };
 
+const GRAPHEME_SEGMENTER =
+	typeof Intl.Segmenter === "function"
+		? new Intl.Segmenter(undefined, { granularity: "grapheme" })
+		: null;
+
 // Windows shows overlay icons at 16x16; draw at 2x so it stays sharp on high-DPI displays.
 const CANVAS_SIZE = 32;
 const CORNER_RADIUS = 6;
@@ -64,7 +69,16 @@ export default class LetterBadgePlugin extends Plugin {
 	}
 
 	async loadSettings() {
-		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+		const data: unknown = await this.loadData();
+		const stored = isRecord(data) ? data : {};
+		this.settings = {
+			letter:
+				typeof stored.letter === "string"
+					? firstChar(stored.letter.trim())
+					: DEFAULT_SETTINGS.letter,
+			color: isHexColor(stored.color) ? stored.color : DEFAULT_SETTINGS.color,
+			size: isLetterSize(stored.size) ? stored.size : DEFAULT_SETTINGS.size,
+		};
 	}
 
 	async saveSettings() {
@@ -94,8 +108,22 @@ export default class LetterBadgePlugin extends Plugin {
 }
 
 function firstChar(text: string): string {
-	// Array.from keeps surrogate pairs together.
+	if (GRAPHEME_SEGMENTER) {
+		return GRAPHEME_SEGMENTER.segment(text)[Symbol.iterator]().next().value?.segment ?? "";
+	}
 	return Array.from(text)[0] ?? "";
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isLetterSize(value: unknown): value is LetterSize {
+	return value === "small" || value === "medium" || value === "large";
+}
+
+function isHexColor(value: unknown): value is string {
+	return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
 }
 
 function renderBadge(letter: string, color: string, sizeRatio: number): string | null {
@@ -127,9 +155,13 @@ function renderBadge(letter: string, color: string, sizeRatio: number): string |
 function textColorFor(hex: string): string {
 	const match = /^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i.exec(hex);
 	if (!match) return "#ffffff";
-	const [r, g, b] = match.slice(1).map((h) => parseInt(h, 16));
-	const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-	return luminance > 0.6 ? "#000000" : "#ffffff";
+	const [r, g, b] = match.slice(1).map((h) => parseInt(h, 16) / 255);
+	const linearize = (channel: number) =>
+		channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+	const luminance = 0.2126 * linearize(r) + 0.7152 * linearize(g) + 0.0722 * linearize(b);
+	const contrastWithBlack = (luminance + 0.05) / 0.05;
+	const contrastWithWhite = 1.05 / (luminance + 0.05);
+	return contrastWithBlack >= contrastWithWhite ? "#000000" : "#ffffff";
 }
 
 class LetterBadgeSettingTab extends PluginSettingTab {
@@ -146,14 +178,13 @@ class LetterBadgeSettingTab extends PluginSettingTab {
 
 		new Setting(containerEl)
 			.setName("Letter")
-			.setDesc("The character shown on the badge. Leave empty to use the first letter of the vault name.")
+			.setDesc("The first character shown on the badge. Leave empty to use the first letter of the vault name.")
 			.addText((text) => {
-				text.inputEl.maxLength = 1;
 				text
 					.setPlaceholder(this.plugin.defaultLetter())
 					.setValue(this.plugin.settings.letter)
 					.onChange(async (value) => {
-						this.plugin.settings.letter = value;
+						this.plugin.settings.letter = firstChar(value.trim());
 						await this.save();
 					});
 			});
@@ -174,7 +205,10 @@ class LetterBadgeSettingTab extends PluginSettingTab {
 					.addOptions({ small: "Small", medium: "Medium", large: "Large" })
 					.setValue(this.plugin.settings.size)
 					.onChange(async (value) => {
-						this.plugin.settings.size = value as LetterSize;
+						if (!isLetterSize(value)) {
+							throw new Error(`Invalid letter size: ${value}`);
+						}
+						this.plugin.settings.size = value;
 						await this.save();
 					})
 			);
